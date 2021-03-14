@@ -5,31 +5,55 @@ import React, { useState } from 'react'
 
 export default function Home() {
 
+  const mimeTypes = [
+    'image/jpeg',
+    'image/gif',
+    'image/png'
+  ];
+  
   const qr = new QrcodeDecoder()
   const img = React.createRef()
   const inputFile = React.createRef()
   const [imageData, setImageData] = useState(null)
   const [imageUrl, setImageUrl] = useState('/placeholder.png')
-  const [imageChoosen, setImageChoosen] = useState(false);
+  const [imageChoosen, setImageChoosen] = useState(false)
+  const [error, setError] = useState(null)
 
   async function decodeImage() {
     try {
       const code = await qr.decodeFromImage(img.current)
-      const splitedData = code.data.split(';');
+
+      if (code.data === undefined || code.data.trim() === '') {
+        throw new Error('Invalid QR Code!')
+      }
+
       setImageData(code.data)
     } catch (e) {
-      setImageData(null)
-      alert('Invalid QR Code!')
+      setError(e.message)
     }
   }
 
   function handleImageChange(event) {
-    setImageUrl(URL.createObjectURL(event.target.files[0]))
-    setImageChoosen(true)
-  }
+    setError(null)
+    setImageData(null)
+    const imageDetails = event.target.files[0];
 
-  function chooseImage() {
-    inputFile.current.click()
+    try {
+      if (imageDetails === undefined) {
+        throw new Error('Choose a image')
+      }
+  
+      const found = mimeTypes.find(mime => mime === imageDetails.type)
+  
+      if (!found) {
+        throw new Error('Invalid image type')
+      }
+  
+      setImageUrl(URL.createObjectURL(imageDetails))
+      setImageChoosen(true)
+    } catch (e) {
+      setError(e.message)
+    }
   }
 
   return (
@@ -39,31 +63,35 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className={styles.main}>
-        <img 
-          src={imageUrl} 
-          ref={img} 
-          className={styles.qrcode} />
+      <img 
+        src={imageUrl} 
+        ref={img} 
+        className={styles.qrcode} />
 
-        <input 
-          ref={inputFile}
-          type="file" 
-          className={styles.hide} 
-          onChange={ (event) => handleImageChange(event) } />
+      <input 
+        accept={mimeTypes}
+        ref={inputFile}
+        type="file" 
+        className={styles.hide} 
+        onChange={ (event) => handleImageChange(event) } />
 
-        <button 
-          onClick={() => chooseImage()}
-          className={styles.button}>Choose image</button>
+      <button 
+        onClick={() => inputFile.current.click()}
+        className={styles.button}>Choose image</button>
 
-        <button 
-          onClick={() => decodeImage()}
-          className={imageChoosen ? styles.button : styles.hide}>Decode</button>
-        
-        <div
-          className={
-            imageData !== null ? styles.data : styles.hide
-          }>{imageData}</div>
-      </main>
+      <button 
+        onClick={() => decodeImage()}
+        className={imageChoosen ? styles.button : styles.hide}>Decode</button>
+      
+      <div
+        className={
+          imageData ? styles.data : styles.hide
+        }>{imageData}</div>
+
+      <div
+        className={
+          error ? styles.error : styles.hide
+        }>{error}</div>
     </div>
   )
 }
