@@ -15,6 +15,7 @@ export default function Home() {
   async function decodeImage() {
     try {
       const code = await qr.decodeFromImage(img.current)
+      const splitedData = code.data.split(';');
       setImageData(code.data)
     } catch (e) {
       setImageData(null)
